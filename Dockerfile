@@ -2,12 +2,17 @@ FROM ubuntu:focal
 LABEL maintainer="Chris Wieringa <cwieri39@calvin.edu>"
 
 # Set versions and platforms
-ARG S6_OVERLAY_VERSION=3.1.3.0
+ARG S6_OVERLAY_VERSION=3.1.5.0
 ARG BUILDDATE=20230724-1
 ARG TZ=America/Detroit
 
 # Do all run commands with bash
 SHELL ["/bin/bash", "-c"] 
+
+# Start with some base packages
+RUN apt update -y && \
+    DEBIAN_FRONTEND=noninteractive apt install -y tar wget curl liblzma5 xz-utils && \
+    rm -rf /var/lib/apt/lists/*
 
 # Start with base Ubuntu
 # Set timezone
@@ -15,15 +20,16 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && \
     echo "$TZ" > /etc/timezone
 
 # add CalvinAD trusted root certificate
-ADD https://raw.githubusercontent.com/Calvin-CS/Infrastructure_configs/main/auth/CalvinCollege-ad-CA.crt /etc/ssl/certs
+ADD https://raw.githubusercontent.com/Calvin-CS/Infrastructure_configs/main/auth/CalvinCollege-ad-CA.crt /etc/ssl/certs/
 RUN chmod 0644 /etc/ssl/certs/CalvinCollege-ad-CA.crt
 RUN ln -s -f /etc/ssl/certs/CalvinCollege-ad-CA.crt /etc/ssl/certs/ddbc78f4.0
 
 # Setup multiple stuff going on in the container instead of just single access  -------------------------#
 # S6 overlay from https://github.com/just-containers/s6-overlay
-ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz /tmp
-ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-x86_64.tar.xz /tmp
-RUN tar -C / -Jxpf /tmp/s6-overlay-noarch.tar.xz && \
+ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz /tmp/
+ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-x86_64.tar.xz /tmp/
+RUN ls -al /tmp/ && \
+    tar -C / -Jxpf /tmp/s6-overlay-noarch.tar.xz && \
     tar -C / -Jxpf /tmp/s6-overlay-x86_64.tar.xz && \
     rm -f /tmp/s6-overlay-*.tar.xz
 
